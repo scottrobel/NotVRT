@@ -13,6 +13,7 @@
 ```js
 amount to deposit * timestamp / scoreFactor
 ```
+- a user should be able to update their score by increasing the time they are staked for, increasing the amount of stake, or both. **this means that the amount parameter may be zero, so we should check for that before transfering funds**
 <br>
 - If a user already has a score, the score will be recalculated with the total amount deposited (amounts are added)
 - VRT will then be transferred to the contract via ``transferFrom``
