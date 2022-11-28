@@ -7,8 +7,8 @@
 ## Deposit
 <br>
 - deposits will happen on a *rolling* basis. What this means is that every new deposit will increase the ``endTime`` field for the user's stake by the specified amount of time.
-- deposit time will be for a minimum of 1 month and a maximum of 1 year **pending review**
-- The score field will be calculated as follows **pending review**
+- deposit time will be for a minimum of 1 month and a maximum of 1 year
+- The score field will be calculated as follows
 
 ```js
 amount to deposit * timestamp / scoreFactor
