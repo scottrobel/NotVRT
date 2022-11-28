@@ -1,5 +1,9 @@
 # Contract Implementation
 
+## Global values
+- scoreFactor public (need an admin only setter)
+- reward factor public (need an admin setter)
+
 ## Deposit
 <br>
 - deposits will happen on a *rolling* basis. What this means is that every new deposit will increase the ``endTime`` field for the user's stake by the specified amount of time.
@@ -7,10 +11,10 @@
 - The score field will be calculated as follows **pending review**
 
 ```js
-amount to deposit * timestamp / 10 ^ 14
+amount to deposit * timestamp / scoreFactor
 ```
 <br>
-- If a user already has a score, they will be added **pending review**
+- If a user already has a score, the score will be recalculated with the total amount deposited (amounts are added)
 - VRT will then be transferred to the contract via ``transferFrom``
 
 ## Withdraw
