@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "hardhat/console.sol";
 
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
@@ -124,13 +125,14 @@ contract StakeVRT is Ownable {
     }
 
     function withdraw() external {
-        (bool _isStakeholder, uint256 s) = isStakeholder(msg.sender);
+        (bool _isStakeholder, ) = isStakeholder(msg.sender);
         require(_isStakeholder, "Should be stakeholder to try withdraw");
         require(block.timestamp >= stakes[msg.sender].endTime, "You can't withdraw before end time");
         iVrt.transfer(msg.sender, stakes[msg.sender].amount);
 
         emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
         removeStakeholder(msg.sender);
+
         delete(stakes[msg.sender]);
     }
 
