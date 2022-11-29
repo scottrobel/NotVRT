@@ -49,6 +49,7 @@ contract StakeVRT is Ownable {
     }
 
     function deposit(uint256 _amount, uint256 _period) external {
+        require(_amount > 0, "Should be not zero");
         require(_amount <= iVrt.balanceOf(msg.sender), "Balance is not enough");
         require(_period >= minimumPeriod && _period <= maximumPeriod, "Invalid period");
         iVrt.transferFrom(msg.sender, address(this), _amount);
