@@ -30,7 +30,7 @@ contract StakeVRT is Ownable {
     IERC20 iVrt;
     
     /**
-     * @notice We usually require to know who are all the stakeholders.
+     * @notice It is required to know who are all the stakeholders.
      */
     address[] internal stakeholders;
 
@@ -70,41 +70,33 @@ contract StakeVRT is Ownable {
     * @return bool, uint256 Whether the address is a stakeholder,
     * and if so its position in the stakeholders array.
     */
-   function isStakeholder(address _address)
-       public
-       view
-       returns(bool, uint256)
-   {
-       for (uint256 s = 0; s < stakeholders.length; s += 1){
-           if (_address == stakeholders[s]) return (true, s);
-       }
-       return (false, 0);
-   }
+    function isStakeholder(address _address) public view returns(bool, uint256) {
+        for (uint256 s = 0; s < stakeholders.length; s += 1){
+            if (_address == stakeholders[s]) return (true, s);
+        }
+        return (false, 0);
+    }
 
    /**
     * @notice A method to add a stakeholder.
     * @param _stakeholder The stakeholder to add.
     */
-   function addStakeholder(address _stakeholder)
-       public
-   {
-       (bool _isStakeholder, ) = isStakeholder(_stakeholder);
-       if(!_isStakeholder) stakeholders.push(_stakeholder);
-   }
+    function addStakeholder(address _stakeholder) public {
+        (bool _isStakeholder, ) = isStakeholder(_stakeholder);
+        if(!_isStakeholder) stakeholders.push(_stakeholder);
+    }
 
-   /**
-    * @notice A method to remove a stakeholder.
-    * @param _stakeholder The stakeholder to remove.
-    */
-   function removeStakeholder(address _stakeholder)
-       public
-   {
-       (bool _isStakeholder, uint256 s) = isStakeholder(_stakeholder);
-       if(_isStakeholder){
-           stakeholders[s] = stakeholders[stakeholders.length - 1];
-           stakeholders.pop();
-       }
-   }
+    /**
+        * @notice A method to remove a stakeholder.
+        * @param _stakeholder The stakeholder to remove.
+        */
+    function removeStakeholder(address _stakeholder) public {
+        (bool _isStakeholder, uint256 s) = isStakeholder(_stakeholder);
+        if(_isStakeholder){
+            stakeholders[s] = stakeholders[stakeholders.length - 1];
+            stakeholders.pop();
+        }
+    }
 
     /**
     * @notice The main staking function.
@@ -141,7 +133,6 @@ contract StakeVRT is Ownable {
     function claimRewards() external {}
 
     // Emergency Functions
-
     function withdrawETH() external onlyOwner {
         address payable to = payable(msg.sender);
         to.transfer(address(this).balance);
