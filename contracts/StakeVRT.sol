@@ -16,6 +16,12 @@ contract StakeVRT is Ownable {
         uint256 score;
     }
 
+    uint256 public scoreFactor;
+    uint256 public rewardFactor;
+
+    uint256 public minimumPeriod = 30 days;
+    uint256 public maximumPeriod = 365 days;
+
     address public snacks;
     IRsnacks iSnacks;
 
@@ -23,6 +29,8 @@ contract StakeVRT is Ownable {
     IERC20 iVrt;
 
     mapping(address => Stake) private stakes;
+
+    event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
 
     constructor(address _vrt, address _rSnacks) {
         snacks = _rSnacks;
@@ -32,7 +40,24 @@ contract StakeVRT is Ownable {
         iVrt = IERC20(vrt);
     }
 
-    function deposit(uint256 _amount) external {}
+    function setScoreFactor(uint256 _scoreFactor) public onlyOwner {
+        scoreFactor = _scoreFactor;
+    }
+    
+    function setRewardFactor(uint256 _rewardFactor) public onlyOwner {
+        rewardFactor = _rewardFactor;
+    }
+
+    function deposit(uint256 _amount, uint256 _period) external {
+        require(_amount <= iVrt.balanceOf(msg.sender), "Balance is not enough");
+        require(_period >= minimumPeriod && _period <= maximumPeriod, "Invalid period");
+        iVrt.transferFrom(msg.sender, address(this), _amount);
+
+        Stake memory newStake = Stake(block.timestamp, block.timestamp + _period, _amount,_amount * _period / scoreFactor);
+
+        stakes[msg.sender] = newStake;
+        emit Deposit(msg.sender, _amount, _period, block.timestamp);
+    }
 
     function withdraw() external {}
 
