@@ -43,6 +43,14 @@ contract StakeVRT is Ownable {
         iVrt = IERC20(vrt);
     }
 
+    function getUserStake(address addr) public view returns(Stake memory) {
+        return stakes[addr];
+    }
+    
+    function getAllStakes() public view {
+        // Better if we can just return an object of stake keys
+    }
+
     /**
     * @notice The score factor can be set by only owner.
     * @param _scoreFactor The score factor variable to set.
