@@ -4,41 +4,32 @@ const {
 } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 
-describe("RsnacksToken contract", function () {
+describe("StakeVRT contract test", function () {
   async function deployContracts() {
     const [owner, user] = await ethers.getSigners();
-    console.log(owner.address, user.address);
 
+    // Deploy Rsnack token contract.
     const Rsnack = await ethers.getContractFactory("Rsnacks");
     const RsnackContract = await Rsnack.deploy();
     const RsnackContractAddress = RsnackContract.address;
 
+    // Deploy VRT token contract.
     const VRT = await ethers.getContractFactory("VRT");
     const VRTContract = await VRT.deploy();
     const VRTContractAddress = VRTContract.address;
 
-    await VRTContract.connect(owner).mint(owner.address, 15000000);
-
+    // Deploy StakeVRT contract.
     const StakeVRT = await ethers.getContractFactory("StakeVRT");
     const StakeVRTContract = await StakeVRT.deploy(
       VRTContractAddress,
       RsnackContractAddress
     );
 
-    await VRTContract.connect(owner).transfer(user.address, 100000);
-    const StakeVRTContractAddress = StakeVRTContract.address;
-    console.log(StakeVRTContractAddress, "staking contract address");
-
-    await StakeVRTContract.connect(owner).setScoreFactor(100);
-
-    await VRTContract.connect(user).approve(StakeVRTContractAddress, 100);
-    let tx = await StakeVRTContract.connect(user).deposit(100, 86400 * 30);
-    console.log(tx.hash, "user deposit token");
-
+    // Returns VRT and StakeVRT contracts.
     return { VRTContract, StakeVRTContract };
   }
 
-  it("Deployment should assign the total supply of tokens to the owner", async function () {
+  it("Staking function test", async function () {
     const [owner, user] = await ethers.getSigners();
     const { VRTContract, StakeVRTContract } = await loadFixture(
       deployContracts
@@ -46,32 +37,37 @@ describe("RsnacksToken contract", function () {
 
     const StakeVRTContractAddress = StakeVRTContract.address;
 
-    await VRTContract.connect(owner).transfer(user.address, 100000);
-    const userBalance = await VRTContract.balanceOf(user.address);
-    console.log(userBalance, "User balance after transfer");
+    console.log("Transfer 1000 VRTs to user.");
+    await VRTContract.connect(owner).transfer(user.address, 1000);
+    // Check user's VRT balance after transfer.
+    expect(await VRTContract.balanceOf(user.address)).to.equal(1000);
 
-    await StakeVRTContract.connect(owner).setScoreFactor(100);
-
-    console.log(StakeVRTContractAddress, "staking contract address");
-    await VRTContract.connect(user).approve(StakeVRTContractAddress, 100);
-    let tx = await StakeVRTContract.connect(user).deposit(100, 86400 * 30);
-    console.log(tx.hash, "user deposit token");
-
-    const stakeContractBalance = await VRTContract.balanceOf(
+    // Check VRT balance of staking contract before staking.
+    let stakeContractVRTBalance = await VRTContract.balanceOf(
       StakeVRTContractAddress
     );
-    console.log(stakeContractBalance, "deposited token balance");
-  });
-
-  it("Withdraw should be available after period", async function () {
-    const [owner, user] = await ethers.getSigners();
-    const { VRTContract, StakeVRTContract } = await loadFixture(
-      deployContracts
+    console.log(
+      "StakeVRT contract's VRT balance before staking: ",
+      stakeContractVRTBalance.toString()
     );
+    expect(stakeContractVRTBalance).to.be.equal(0);
 
-    await time.increase(86400 * 30);
+    await VRTContract.connect(user).approve(StakeVRTContractAddress, 100);
+    console.log("Stake 100 VRT tokens for 1 month.");
+    let tx = await StakeVRTContract.connect(user).deposit(100, 86400 * 30);
 
-    await StakeVRTContract.connect(user).withdraw();
-    console.log(await VRTContract.balanceOf(user.address));
+    // Check VRT balance of staking contract after staking.
+    stakeContractVRTBalance = await VRTContract.balanceOf(
+      StakeVRTContractAddress
+    );
+    console.log(
+      "StakeVRT contract's VRT balance after staking: ",
+      stakeContractVRTBalance.toString()
+    );
+    expect(stakeContractVRTBalance).to.be.equal(100);
+
+    // Trying to claim rewards after some 15 days.
+    // await time.increase(86400 * 15);
+    // tx = await StakeVRTContract.connect(user).claimRewards(user.address);
   });
 });

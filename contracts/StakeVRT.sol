@@ -5,23 +5,28 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 
+import "./Rsnacks.sol";
+
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
 }
 
 contract StakeVRT is Ownable {
     struct Stake {
-        uint256 startTime;
-        uint256 endTime;
         uint256 amount;
+        uint256 time;
         uint256 score;
+        uint256 lastClaim;
     }
 
     uint256 public scoreFactor;
     uint256 public rewardFactor;
 
-    uint256 public minimumPeriod = 30 days;
-    uint256 public maximumPeriod = 365 days;
+    uint256 public month = 30 days;
+    uint256 public year = 365 days;
+
+    uint256 userScoreDivisor = 1e15;
+    uint256 perSecondDivisor = 1e5;
 
     address public snacks;
     IRsnacks iSnacks;
@@ -43,57 +48,61 @@ contract StakeVRT is Ownable {
         iVrt = IERC20(vrt);
     }
 
-    function getUserStake(address addr) public view returns(Stake memory) {
-        return stakes[addr];
-    }
-    
-    function getAllStakes() public view {
-        // Better if we can just return an object of stake keys
-    }
-
     /**
-    * @notice The score factor can be set by only owner.
-    * @param _scoreFactor The score factor variable to set.
+    * @notice The userScoreDivisor can be set by only owner.
+    * @param _userScoreDivisor The score factor variable to set.
     */
-    function setScoreFactor(uint256 _scoreFactor) public onlyOwner {
-        scoreFactor = _scoreFactor;
+    function setUserScoreDivisor(uint256 _userScoreDivisor) public onlyOwner {
+        userScoreDivisor = _userScoreDivisor;
     }
     
     /**
-    * @notice The reward factor can be set by only owner.
-    * @param _rewardFactor The reward factor variable to set.
+    * @notice The perSecondDivisor can be set by only owner.
+    * @param _perSecondDivisor The perSecondDivisor variable to set.
     */
-    function setRewardFactor(uint256 _rewardFactor) public onlyOwner {
-        rewardFactor = _rewardFactor;
+    function setPerSecondDivisor(uint256 _perSecondDivisor) public onlyOwner {
+        perSecondDivisor = _perSecondDivisor;
     }
 
     /**
     * @notice The main staking function.
     * @param _amount The amount to stake.
-    * @param _period The period to stake.
+    * @param _time The period to stake.
     */
-    function deposit(uint256 _amount, uint256 _period) external {
-        require(_period >= minimumPeriod && _period <= maximumPeriod, "Invalid period");
+    function deposit(uint256 _amount, uint256 _time) external {
+        require(_time >= month && _time <= year, "Staking time should be between a month to a year.");
+        require(_amount > 0, "Staking amount can't be 0.");
+        
         iVrt.transferFrom(msg.sender, address(this), _amount);
 
-        Stake memory newStake = Stake(block.timestamp, block.timestamp + _period, _amount,_amount * _period / scoreFactor);
+        Stake storage userStake = stakes[msg.sender];
 
-        stakes[msg.sender] = newStake;
-        emit Deposit(msg.sender, _amount, _period, block.timestamp);
+        uint256 amount;
+        uint256 time;
+        if(userStake.amount != 0) {
+            amount = userStake.amount + _amount;
+            time = userStake.time + _time; 
+        }
+
+        uint256 stakingScore = amount * time / userScoreDivisor;
+
+        stakes[msg.sender] = Stake(amount, time, stakingScore, userStake.lastClaim);
+
+        emit Deposit(msg.sender, _amount, _time, block.timestamp);
     }
 
     function withdraw() external {
-        require(block.timestamp >= stakes[msg.sender].endTime, "You can't withdraw before end time");
-        iVrt.transfer(msg.sender, stakes[msg.sender].amount);
-
-        emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
-
-        delete(stakes[msg.sender]);
     }
 
     function viewRewards(address _user) external returns (uint256) {}
 
-    function claimRewards() external {}
+    function claimRewards(address _user) public {
+        Stake storage userStake = stakes[_user];
+        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
+        uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        stakes[_user].lastClaim = block.timestamp;
+        iSnacks.mint(_user, rewardAmount);
+    }
 
     // Emergency Functions
     function withdrawETH() external onlyOwner {
