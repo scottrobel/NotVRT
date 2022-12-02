@@ -75,17 +75,10 @@ contract StakeVRT is Ownable {
 
         Stake storage userStake = stakes[msg.sender];
 
-        uint256 amount;
-        uint256 time;
-        if(userStake.amount != 0) {
-            amount = userStake.amount + _amount;
-            time = userStake.time + _time; 
-        }
-        else {
-            amount = _amount;
-            time = _time;
-        }
-
+        uint256 amount = userStake.amount + _amount;
+        uint256 time = userStake.time + _time;
+        if(time > year) time = year;
+        
         uint256 stakingScore = amount * time / userScoreDivisor;
 
         stakes[msg.sender] = Stake(amount, time, stakingScore, userStake.lastClaim);
