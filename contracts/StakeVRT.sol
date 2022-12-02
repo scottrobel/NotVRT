@@ -92,7 +92,7 @@ contract StakeVRT is Ownable {
 
     function viewRewards(address _user) external returns (uint256) {}
 
-    function claimRewards(address _user) public {
+    function claimRewards(address _user) external {
         Stake storage userStake = stakes[_user];
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
