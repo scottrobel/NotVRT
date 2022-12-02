@@ -21,3 +21,6 @@ amount to deposit * timestamp / scoreFactor
 ## Withdraw
 - withdraw should be standard, if the required time has passed, allow the user to withdraw and zero out their stake struct.
 
+## Contract Errors Explanation
+1 => Staking time should be between a month to a year.
+2 => Staking amount can't be 0.

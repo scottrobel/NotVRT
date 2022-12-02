@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 
-import "./Rsnacks.sol";
-
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
 }
@@ -22,17 +20,17 @@ contract StakeVRT is Ownable {
     uint256 public scoreFactor;
     uint256 public rewardFactor;
 
-    uint256 public month = 30 days;
-    uint256 public year = 365 days;
+    uint256 public constant month = 30 days;
+    uint256 public constant year = 365 days;
 
     uint256 userScoreDivisor = 1e15;
     uint256 perSecondDivisor = 1e5;
 
-    address public snacks;
-    IRsnacks iSnacks;
+    address public immutable snacks;
+    IRsnacks immutable iSnacks;
 
-    address public vrt;
-    IERC20 iVrt;
+    address public immutable vrt;
+    IERC20 immutable iVrt;
 
     mapping(address => Stake) private stakes;
 
@@ -70,8 +68,8 @@ contract StakeVRT is Ownable {
     * @param _time The period to stake.
     */
     function deposit(uint256 _amount, uint256 _time) external {
-        require(_time >= month && _time <= year, "Staking time should be between a month to a year.");
-        require(_amount > 0, "Staking amount can't be 0.");
+        require(_time >= month && _time <= year, "1");
+        require(_amount > 0, "2");
         
         iVrt.transferFrom(msg.sender, address(this), _amount);
 
