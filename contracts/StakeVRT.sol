@@ -81,6 +81,10 @@ contract StakeVRT is Ownable {
             amount = userStake.amount + _amount;
             time = userStake.time + _time; 
         }
+        else {
+            amount = _amount;
+            time = _time;
+        }
 
         uint256 stakingScore = amount * time / userScoreDivisor;
 
