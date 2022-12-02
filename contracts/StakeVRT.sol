@@ -77,11 +77,12 @@ contract StakeVRT is Ownable {
 
         uint256 amount = userStake.amount + _amount;
         uint256 time = userStake.time + _time;
-        if(time > year) time = year;
-        
         uint256 stakingScore = amount * time / userScoreDivisor;
 
-        stakes[msg.sender] = Stake(amount, time, stakingScore, userStake.lastClaim);
+        stakes[msg.sender].amount = amount;
+        stakes[msg.sender].time = time > year ? year : time;
+        stakes[msg.sender].score = stakingScore;
+        stakes[msg.sender].lastClaim = userStake.lastClaim;
 
         emit Deposit(msg.sender, _amount, _time, block.timestamp);
     }
