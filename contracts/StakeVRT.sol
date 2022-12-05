@@ -15,6 +15,7 @@ contract StakeVRT is Ownable {
         uint256 time;
         uint256 score;
         uint256 lastClaim;
+        uint256 unlockTimestamp;
     }
 
     uint256 public scoreFactor;
@@ -51,6 +52,7 @@ contract StakeVRT is Ownable {
     * @param _userScoreDivisor The score factor variable to set.
     */
     function setUserScoreDivisor(uint256 _userScoreDivisor) public onlyOwner {
+        require(_userScoreDivisor > 0, "User score divisor can't be 0");
         userScoreDivisor = _userScoreDivisor;
     }
     
@@ -59,6 +61,7 @@ contract StakeVRT is Ownable {
     * @param _perSecondDivisor The perSecondDivisor variable to set.
     */
     function setPerSecondDivisor(uint256 _perSecondDivisor) public onlyOwner {
+        require(_perSecondDivisor > 0, "Per second divisor can't be 0");
         perSecondDivisor = _perSecondDivisor;
     }
 
@@ -69,20 +72,26 @@ contract StakeVRT is Ownable {
     */
     function deposit(uint256 _amount, uint256 _time) external {
         require(_time >= month && _time <= year, "1");
-        require(_amount > 0, "2");
         
-        iVrt.transferFrom(msg.sender, address(this), _amount);
+        // Stakeholder can increase their staking time even if he is already staked.
+        if(_amount > 0) {
+            iVrt.transferFrom(msg.sender, address(this), _amount);
+        }
 
         Stake storage userStake = stakes[msg.sender];
 
         uint256 amount = userStake.amount + _amount;
-        uint256 time = userStake.time + _time;
-        uint256 stakingScore = amount * time / userScoreDivisor;
+
+        uint256 maxExtension = block.timestamp + year - userStake.unlockTimestamp;
+        uint256 time = _time > maxExtension ? maxExtension : _time;
 
         stakes[msg.sender].amount = amount;
-        stakes[msg.sender].time = time > year ? year : time;
+        stakes[msg.sender].time += time;
+        stakes[msg.sender].unlockTimestamp += time;
+
+        uint256 stakingScore = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
+
         stakes[msg.sender].score = stakingScore;
-        stakes[msg.sender].lastClaim = userStake.lastClaim;
 
         emit Deposit(msg.sender, _amount, _time, block.timestamp);
     }
