@@ -80,18 +80,13 @@ contract StakeVRT is Ownable {
 
         Stake storage userStake = stakes[msg.sender];
 
-        uint256 amount = userStake.amount + _amount;
-
         uint256 maxExtension = block.timestamp + year - userStake.unlockTimestamp;
         uint256 time = _time > maxExtension ? maxExtension : _time;
 
-        stakes[msg.sender].amount = amount;
+        stakes[msg.sender].amount = (userStake.amount + _amount);
         stakes[msg.sender].time += time;
         stakes[msg.sender].unlockTimestamp += time;
-
-        uint256 stakingScore = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
-
-        stakes[msg.sender].score = stakingScore;
+        stakes[msg.sender].score = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
 
         emit Deposit(msg.sender, _amount, _time, block.timestamp);
     }
