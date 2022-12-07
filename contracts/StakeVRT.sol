@@ -83,6 +83,9 @@ contract StakeVRT is Ownable {
         uint256 maxExtension = block.timestamp + year - userStake.unlockTimestamp;
         uint256 time = _time > maxExtension ? maxExtension : _time;
 
+        if(userStake.lastClaim == 0) { // Set last stake time for user's first stake
+            stakes[msg.sender].lastClaim = block.timestamp;
+        }
         stakes[msg.sender].amount = (userStake.amount + _amount);
         stakes[msg.sender].time += time;
         stakes[msg.sender].unlockTimestamp += time;
