@@ -97,12 +97,16 @@ contract StakeVRT is Ownable {
     function withdraw() external {
     }
 
-    function viewRewards(address _user) external returns (uint256) {}
-
-    function claimRewards(address _user) external {
+    function viewRewards(address _user) external view returns (uint256) {
         Stake storage userStake = stakes[_user];
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        return rewardAmount;
+    }
+
+    function claimRewards(address _user) external {
+        uint256 elapsedSeconds = block.timestamp - stakes[_user].lastClaim;
+        uint256 rewardAmount = stakes[_user].score * elapsedSeconds / perSecondDivisor;
         stakes[_user].lastClaim = block.timestamp;
         iSnacks.mint(_user, rewardAmount);
     }

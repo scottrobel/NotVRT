@@ -38,9 +38,9 @@ describe("StakeVRT contract test", function () {
     const StakeVRTContractAddress = StakeVRTContract.address;
 
     console.log("Transfer 1000 VRTs to user.");
-    await VRTContract.connect(owner).transfer(user.address, 1000);
+    await VRTContract.connect(owner).transfer(user.address, 10000000000);
     // Check user's VRT balance after transfer.
-    expect(await VRTContract.balanceOf(user.address)).to.equal(1000);
+    expect(await VRTContract.balanceOf(user.address)).to.equal(10000000000);
 
     // Check VRT balance of staking contract before staking.
     let stakeContractVRTBalance = await VRTContract.balanceOf(
@@ -49,12 +49,13 @@ describe("StakeVRT contract test", function () {
     console.log(
       "StakeVRT contract's VRT balance before staking: ",
       stakeContractVRTBalance.toString()
-    );
-    expect(stakeContractVRTBalance).to.be.equal(0);
-
-    await VRTContract.connect(user).approve(StakeVRTContractAddress, 100);
+      );
+      expect(stakeContractVRTBalance).to.be.equal(0);
+      
+    
+    await VRTContract.connect(user).approve(StakeVRTContractAddress, 10000000000);
     console.log("Stake 100 VRT tokens for 1 month.");
-    let tx = await StakeVRTContract.connect(user).deposit(100, 86400 * 30);
+    let tx = await StakeVRTContract.connect(user).deposit(10000000000, 86400 * 30 *12);
 
     // Check VRT balance of staking contract after staking.
     stakeContractVRTBalance = await VRTContract.balanceOf(
@@ -64,7 +65,14 @@ describe("StakeVRT contract test", function () {
       "StakeVRT contract's VRT balance after staking: ",
       stakeContractVRTBalance.toString()
     );
-    expect(stakeContractVRTBalance).to.be.equal(100);
+    expect(stakeContractVRTBalance).to.be.equal(10000000000);
+
+    let rewardAmount = await StakeVRTContract.viewRewards(user.address);
+    console.log(rewardAmount);
+
+    await time.increase(86400 * 30 * 6);
+    rewardAmount = await StakeVRTContract.viewRewards(user.address);
+    console.log((ethers.utils.formatEther(rewardAmount)));
 
     // Trying to claim rewards after some 15 days.
     // await time.increase(86400 * 15);
