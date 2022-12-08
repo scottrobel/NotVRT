@@ -105,8 +105,10 @@ contract StakeVRT is Ownable {
     }
 
     function claimRewards(address _user) external {
-        uint256 elapsedSeconds = block.timestamp - stakes[_user].lastClaim;
-        uint256 rewardAmount = stakes[_user].score * elapsedSeconds / perSecondDivisor;
+        require(stakes[_user].amount > 0, "User is not stakeholder");
+        Stake storage userStake = stakes[_user];
+        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
+        uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         stakes[_user].lastClaim = block.timestamp;
         iSnacks.mint(_user, rewardAmount);
     }
