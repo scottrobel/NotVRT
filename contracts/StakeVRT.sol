@@ -52,7 +52,7 @@ contract StakeVRT is Ownable {
     * @param _userScoreDivisor The score factor variable to set.
     */
     function setUserScoreDivisor(uint256 _userScoreDivisor) public onlyOwner {
-        require(_userScoreDivisor > 0, "User score divisor can't be 0");
+        require(_userScoreDivisor > 0, "3");
         userScoreDivisor = _userScoreDivisor;
     }
     
@@ -61,7 +61,7 @@ contract StakeVRT is Ownable {
     * @param _perSecondDivisor The perSecondDivisor variable to set.
     */
     function setPerSecondDivisor(uint256 _perSecondDivisor) public onlyOwner {
-        require(_perSecondDivisor > 0, "Per second divisor can't be 0");
+        require(_perSecondDivisor > 0, "4");
         perSecondDivisor = _perSecondDivisor;
     }
 
@@ -105,7 +105,7 @@ contract StakeVRT is Ownable {
     }
 
     function claimRewards(address _user) external {
-        require(stakes[_user].amount > 0, "User is not stakeholder");
+        require(stakes[_user].amount > 0, "2");
         Stake storage userStake = stakes[_user];
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;

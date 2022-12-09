@@ -23,4 +23,6 @@ amount to deposit * timestamp / scoreFactor
 
 ## Contract Errors Explanation
 1 => Staking time should be between a month to a year.
-2 => Staking amount can't be 0.
+2 => User is not stakeholder.
+3 => User score divisor can't be 0.
+4 => Per second divisor can't be 0.
