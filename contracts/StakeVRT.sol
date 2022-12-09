@@ -95,6 +95,14 @@ contract StakeVRT is Ownable {
     }
 
     function withdraw() external {
+        Stake storage userStake = stakes[msg.sender];
+        require(userStake.amount > 0, "2");
+        require(userStake.unlockTimestamp < block.timestamp, "5");
+        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
+        uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        iSnacks.mint(msg.sender, rewardAmount);
+        iVrt.transfer(msg.sender, userStake.amount);
+        delete(stakes[msg.sender]);
     }
 
     function viewRewards(address _user) external view returns (uint256) {
@@ -105,8 +113,8 @@ contract StakeVRT is Ownable {
     }
 
     function claimRewards(address _user) external {
-        require(stakes[_user].amount > 0, "2");
         Stake storage userStake = stakes[_user];
+        require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         stakes[_user].lastClaim = block.timestamp;

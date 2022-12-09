@@ -26,3 +26,4 @@ amount to deposit * timestamp / scoreFactor
 2 => User is not stakeholder.
 3 => User score divisor can't be 0.
 4 => Per second divisor can't be 0.
+5 => You can't withdraw before unlock time.
