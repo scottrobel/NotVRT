@@ -22,8 +22,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     uint256 public scoreFactor;
     uint256 public rewardFactor;
 
-    uint256 public constant month = 30 days;
-    uint256 public constant year = 365 days;
+    uint256 public constant MONTH = 30 days;
+    uint256 public constant YEAR = 365 days;
 
     uint256 userScoreDivisor = 1e15;
     uint256 perSecondDivisor = 1e5;
@@ -51,53 +51,33 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     }
 
     /**
-    * @notice The userScoreDivisor can be set by only owner.
-    * @param _userScoreDivisor The score factor variable to set.
-    */
-    function setUserScoreDivisor(uint256 _userScoreDivisor) public onlyOwner {
-        require(_userScoreDivisor > 0, "3");
-        userScoreDivisor = _userScoreDivisor;
-        emit SetUserScoreDivisor(_userScoreDivisor, block.timestamp);
-    }
-    
-    /**
-    * @notice The perSecondDivisor can be set by only owner.
-    * @param _perSecondDivisor The perSecondDivisor variable to set.
-    */
-    function setPerSecondDivisor(uint256 _perSecondDivisor) public onlyOwner {
-        require(_perSecondDivisor > 0, "4");
-        perSecondDivisor = _perSecondDivisor;
-        emit SetPerSecondDivisor(_perSecondDivisor, block.timestamp);
-    }
-
-    /**
     * @notice The main staking function.
-    * @param _amount The amount to stake.
-    * @param _time The period to stake.
+    * @param depositAmount The amount to stake.
+    * @param depositTime The period to stake.
     */
-    function deposit(uint256 _amount, uint256 _time) external nonReentrant {
-        require(_time >= month && _time <= year, "1");
+    function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
+        require(depositTime >= MONTH && depositTime <= YEAR, "1");
         
         // Stakeholder can increase their staking time even if he is already staked.
-        if(_amount > 0) {
-            iVrt.transferFrom(msg.sender, address(this), _amount);
+        if(depositAmount > 0) {
+            iVrt.transferFrom(msg.sender, address(this), depositAmount);
         }
 
         Stake storage userStake = stakes[msg.sender];
 
-        uint256 maxExtension = block.timestamp + year - userStake.unlockTimestamp;
-        uint256 time = _time > maxExtension ? maxExtension : _time;
+        uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
+        uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
 
         if(userStake.lastClaim == 0) { // Set last stake time for user's first stake
             stakes[msg.sender].lastClaim = block.timestamp;
             stakes[msg.sender].unlockTimestamp = block.timestamp;
         }
-        stakes[msg.sender].amount = (userStake.amount + _amount);
+        stakes[msg.sender].amount = (userStake.amount + depositAmount);
         stakes[msg.sender].time += time;
         stakes[msg.sender].unlockTimestamp += time;
         stakes[msg.sender].score = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
 
-        emit Deposit(msg.sender, _amount, _time, block.timestamp);
+        emit Deposit(msg.sender, depositAmount, depositTime, block.timestamp);
     }
 
     function withdraw() external nonReentrant {
@@ -112,21 +92,14 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         delete(stakes[msg.sender]);
     }
 
-    function viewRewards(address _user) external view returns (uint256) {
-        Stake storage userStake = stakes[_user];
-        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
-        uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        return rewardAmount;
-    }
-
-    function claimRewards(address _user) external nonReentrant {
-        Stake storage userStake = stakes[_user];
+    function claimRewards(address user) external nonReentrant {
+        Stake storage userStake = stakes[user];
         require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        stakes[_user].lastClaim = block.timestamp;
-        iSnacks.mint(_user, rewardAmount);
-        emit ClaimRewards(_user, rewardAmount, block.timestamp);
+        stakes[user].lastClaim = block.timestamp;
+        iSnacks.mint(user, rewardAmount);
+        emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 
     // Emergency Functions
@@ -136,9 +109,33 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     }
 
     function withdrawToken(address token) external onlyOwner {
-        IERC20(token).transfer(
-            msg.sender,
-            IERC20(token).balanceOf(address(this))
-        );
+        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    }
+
+    function viewRewards(address user) external view returns (uint256) {
+        Stake storage userStake = stakes[user];
+        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
+        uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        return rewardAmount;
+    }
+    
+    /**
+    * @notice The userScoreDivisor can be set by only owner.
+    * @param newUserScoreDivisor The score factor variable to set.
+    */
+    function setUserScoreDivisor(uint256 newUserScoreDivisor) public onlyOwner {
+        require(newUserScoreDivisor > 0, "3");
+        userScoreDivisor = newUserScoreDivisor;
+        emit SetUserScoreDivisor(newUserScoreDivisor, block.timestamp);
+    }
+    
+    /**
+    * @notice The perSecondDivisor can be set by only owner.
+    * @param newPerSecondDivisor The perSecondDivisor variable to set.
+    */
+    function setPerSecondDivisor(uint256 newPerSecondDivisor) public onlyOwner {
+        require(newPerSecondDivisor > 0, "4");
+        perSecondDivisor = newPerSecondDivisor;
+        emit SetPerSecondDivisor(newPerSecondDivisor, block.timestamp);
     }
 }
