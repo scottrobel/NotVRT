@@ -3,13 +3,14 @@ pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "hardhat/console.sol";
 
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
 }
 
-contract StakeVRT is Ownable {
+contract StakeVRT is Ownable, ReentrancyGuard {
     struct Stake {
         uint256 amount;
         uint256 time;
@@ -36,7 +37,6 @@ contract StakeVRT is Ownable {
     mapping(address => Stake) private stakes;
 
     event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
-
     event Withdraw(address user, uint256 amount, uint256 withdrawTime);
 
     constructor(address _vrt, address _rSnacks) {
@@ -75,7 +75,8 @@ contract StakeVRT is Ownable {
         
         // Stakeholder can increase their staking time even if he is already staked.
         if(_amount > 0) {
-            iVrt.transferFrom(msg.sender, address(this), _amount);
+            (bool success) = iVrt.transferFrom(msg.sender, address(this), _amount);
+            console.log(success);
         }
 
         Stake storage userStake = stakes[msg.sender];
@@ -85,17 +86,20 @@ contract StakeVRT is Ownable {
 
         if(userStake.lastClaim == 0) { // Set last stake time for user's first stake
             stakes[msg.sender].lastClaim = block.timestamp;
+            stakes[msg.sender].unlockTimestamp = block.timestamp;
         }
         stakes[msg.sender].amount = (userStake.amount + _amount);
         stakes[msg.sender].time += time;
         stakes[msg.sender].unlockTimestamp += time;
+        console.log("unlock timestamp", stakes[msg.sender].unlockTimestamp, block.timestamp);
         stakes[msg.sender].score = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
 
         emit Deposit(msg.sender, _amount, _time, block.timestamp);
     }
 
-    function withdraw() external {
+    function withdraw() external nonReentrant {
         Stake storage userStake = stakes[msg.sender];
+        console.log(userStake.unlockTimestamp, block.timestamp);
         require(userStake.amount > 0, "2");
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
@@ -112,7 +116,7 @@ contract StakeVRT is Ownable {
         return rewardAmount;
     }
 
-    function claimRewards(address _user) external {
+    function claimRewards(address _user) external nonReentrant {
         Stake storage userStake = stakes[_user];
         require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;

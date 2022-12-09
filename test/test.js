@@ -26,12 +26,12 @@ describe("StakeVRT contract test", function () {
     );
 
     // Returns VRT and StakeVRT contracts.
-    return { VRTContract, StakeVRTContract };
+    return { VRTContract, StakeVRTContract, RsnackContract };
   }
 
   it("Staking function test", async function () {
     const [owner, user] = await ethers.getSigners();
-    const { VRTContract, StakeVRTContract } = await loadFixture(
+    const { VRTContract, StakeVRTContract, RsnackContract } = await loadFixture(
       deployContracts
     );
 
@@ -70,9 +70,29 @@ describe("StakeVRT contract test", function () {
     let rewardAmount = await StakeVRTContract.viewRewards(user.address);
     console.log(rewardAmount);
 
-    await time.increase(86400 * 30 * 6);
+    await time.increase(86400 * 30 * 12);
     rewardAmount = await StakeVRTContract.viewRewards(user.address);
     console.log((ethers.utils.formatEther(rewardAmount)));
+
+    await StakeVRTContract.connect(user).withdraw();
+
+    stakeContractVRTBalance = await VRTContract.balanceOf(
+      StakeVRTContractAddress
+    );
+    console.log(
+      "StakeVRT contract's VRT balance after withdraw: ",
+      stakeContractVRTBalance.toString()
+      );
+
+    stakeContractVRTBalance = await VRTContract.balanceOf(
+      user.address
+    );
+    console.log(
+      "User's VRT balance after withdraw: ",
+      stakeContractVRTBalance.toString()
+      );
+    let userRSnackBalance = await RsnackContract.balanceOf(user.address);
+    console.log("user reward balance after withdraw:", userRSnackBalance);
 
     // Trying to claim rewards after some 15 days.
     // await time.increase(86400 * 15);
