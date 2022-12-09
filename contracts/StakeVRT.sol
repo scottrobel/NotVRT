@@ -70,7 +70,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     * @param _amount The amount to stake.
     * @param _time The period to stake.
     */
-    function deposit(uint256 _amount, uint256 _time) external {
+    function deposit(uint256 _amount, uint256 _time) external nonReentrant {
         require(_time >= month && _time <= year, "1");
         
         // Stakeholder can increase their staking time even if he is already staked.
