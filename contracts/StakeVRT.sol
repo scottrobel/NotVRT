@@ -61,8 +61,9 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
         require(depositTime <= YEAR, "1");
         
-        require(depositAmount > 0, "6");
-        require(iVrt.transferFrom(msg.sender, address(this), depositAmount), "7");
+        if(depositAmount > 0){
+            iVrt.transferFrom(msg.sender, address(this), depositAmount);
+        }
 
         Stake storage userStake = stakes[msg.sender];
 
