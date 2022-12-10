@@ -93,7 +93,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        require(iVrt.transfer(msg.sender, userStake.amount), "7");
+        iVrt.transfer(msg.sender, userStake.amount);
         iSnacks.mint(msg.sender, rewardAmount);
         emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
         delete(stakes[msg.sender]);
