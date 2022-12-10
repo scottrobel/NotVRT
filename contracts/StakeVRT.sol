@@ -39,6 +39,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
     event Withdraw(address user, uint256 amount, uint256 timestamp);
     event ClaimRewards(address user, uint256 amount, uint256 timestamp);
+    event WithdrawToken(address user, address token, uint256 timestamp);
     event SetUserScoreDivisor(uint256 userScoreDivisor, uint256 timestamp);
     event SetPerSecondDivisor(uint256 perSecondDivisor, uint256 timestamp);
 
@@ -60,9 +61,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
         require(depositTime <= YEAR, "1");
         
-        if(depositAmount > 0) {
-            iVrt.transferFrom(msg.sender, address(this), depositAmount);
-        }
+        require(depositAmount > 0, "6");
+        require(iVrt.transferFrom(msg.sender, address(this), depositAmount), "7");
 
         Stake storage userStake = stakes[msg.sender];
 
@@ -74,7 +74,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
             stakes[msg.sender].lastClaim = block.timestamp;
             stakes[msg.sender].unlockTimestamp = block.timestamp + time; // Initializes stake to now, increases it 
             stakes[msg.sender].amount = depositAmount;
-            stakes[msg.sender].time == time;
+            stakes[msg.sender].time = time;
         } else{
             stakes[msg.sender].unlockTimestamp += time;
             stakes[msg.sender].amount = (userStake.amount + depositAmount);
@@ -92,7 +92,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        iVrt.transfer(msg.sender, userStake.amount);
+        require(iVrt.transfer(msg.sender, userStake.amount), "7");
         iSnacks.mint(msg.sender, rewardAmount);
         emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
         delete(stakes[msg.sender]);
