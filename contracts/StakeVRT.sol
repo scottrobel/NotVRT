@@ -54,11 +54,12 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     * @notice The main staking function.
     * @param depositAmount The amount to stake.
     * @param depositTime The period to stake.
+    * Users may stake repeatedly, adding more tokens and/or more time to their stake.
+    * (Up to a max of 1 year from block.timestamp)
     */
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
-        require(depositTime >= MONTH && depositTime <= YEAR, "1");
+        require(depositTime <= YEAR, "1");
         
-        // Stakeholder can increase their staking time even if he is already staked.
         if(depositAmount > 0) {
             iVrt.transferFrom(msg.sender, address(this), depositAmount);
         }
@@ -68,13 +69,18 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
         uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
 
-        if(userStake.lastClaim == 0) { // Set last stake time for user's first stake
+        if(userStake.lastClaim == 0) { //Initial stake logic
+            require(time >= MONTH, "1"); // Minimum stake time is 1 month.
             stakes[msg.sender].lastClaim = block.timestamp;
-            stakes[msg.sender].unlockTimestamp = block.timestamp;
+            stakes[msg.sender].unlockTimestamp = block.timestamp + time; // Initializes stake to now, increases it 
+            stakes[msg.sender].amount = depositAmount;
+            stakes[msg.sender].time == time;
+        } else{
+            stakes[msg.sender].unlockTimestamp += time;
+            stakes[msg.sender].amount = (userStake.amount + depositAmount);
+            stakes[msg.sender].time += time;
         }
-        stakes[msg.sender].amount = (userStake.amount + depositAmount);
-        stakes[msg.sender].time += time;
-        stakes[msg.sender].unlockTimestamp += time;
+        // Recalculate user's score after their stake has been modified
         stakes[msg.sender].score = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
 
         emit Deposit(msg.sender, depositAmount, depositTime, block.timestamp);
@@ -86,8 +92,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        iSnacks.mint(msg.sender, rewardAmount);
         iVrt.transfer(msg.sender, userStake.amount);
+        iSnacks.mint(msg.sender, rewardAmount);
         emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
         delete(stakes[msg.sender]);
     }
