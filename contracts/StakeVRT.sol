@@ -4,7 +4,6 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
@@ -19,9 +18,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         uint256 unlockTimestamp;
     }
 
-    uint256 public scoreFactor;
-    uint256 public rewardFactor;
-
     uint256 public constant MONTH = 30 days;
     uint256 public constant YEAR = 365 days;
 
@@ -29,12 +25,11 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     uint256 perSecondDivisor = 1e5;
 
     address public immutable snacks;
-    IRsnacks immutable iSnacks;
-
     address public immutable vrt;
+    IRsnacks immutable iSnacks;
     IERC20 immutable iVrt;
 
-    mapping(address => Stake) private stakes;
+    mapping(address => Stake) public stakes;
 
     event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
     event Withdraw(address user, uint256 amount, uint256 timestamp);
@@ -46,7 +41,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     constructor(address _vrt, address _rSnacks) {
         snacks = _rSnacks;
         iSnacks = IRsnacks(snacks);
-
         vrt = _vrt;
         iVrt = IERC20(vrt);
     }
@@ -60,42 +54,40 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     */
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
         require(depositTime <= YEAR, "1");
-        
         if(depositAmount > 0){
             iVrt.transferFrom(msg.sender, address(this), depositAmount);
         }
-
         Stake storage userStake = stakes[msg.sender];
-
         uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
         uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
-
         if(userStake.lastClaim == 0) { //Initial stake logic
             require(time >= MONTH, "1"); // Minimum stake time is 1 month.
-            stakes[msg.sender].lastClaim = block.timestamp;
-            stakes[msg.sender].unlockTimestamp = block.timestamp + time; // Initializes stake to now, increases it 
-            stakes[msg.sender].amount = depositAmount;
-            stakes[msg.sender].time = time;
+            userStake.lastClaim = block.timestamp;
+            userStake.unlockTimestamp = block.timestamp + time; // Initializes stake to now, increases it 
+            userStake.amount = depositAmount;
+            userStake.time = time;
         } else{
-            stakes[msg.sender].unlockTimestamp += time;
-            stakes[msg.sender].amount = (userStake.amount + depositAmount);
-            stakes[msg.sender].time += time;
+            userStake.unlockTimestamp += time;
+            userStake.amount += depositAmount;
+            userStake.time += time;
         }
-        // Recalculate user's score after their stake has been modified
-        stakes[msg.sender].score = stakes[msg.sender].amount * stakes[msg.sender].time / userScoreDivisor;
-
+        userStake.score = userStake.amount * userStake.time / userScoreDivisor;
+        stakes[msg.sender].amount = userStake.amount;
+        stakes[msg.sender].unlockTimestamp = userStake.unlockTimestamp;
+        stakes[msg.sender].time = userStake.time;
+        stakes[msg.sender].lastClaim = userStake.lastClaim;
+        stakes[msg.sender].score = userStake.score;
         emit Deposit(msg.sender, depositAmount, depositTime, block.timestamp);
     }
 
     function withdraw() external nonReentrant {
         Stake storage userStake = stakes[msg.sender];
-        require(userStake.amount > 0, "2");
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         iVrt.transfer(msg.sender, userStake.amount);
         iSnacks.mint(msg.sender, rewardAmount);
-        emit Withdraw(msg.sender, stakes[msg.sender].amount, block.timestamp);
+        emit Withdraw(msg.sender, userStake.amount, block.timestamp);
         delete(stakes[msg.sender]);
     }
 
@@ -104,12 +96,12 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
-        stakes[user].lastClaim = block.timestamp;
         iSnacks.mint(user, rewardAmount);
+        userStake.lastClaim = block.timestamp;
+        stakes[msg.sender].lastClaim = userStake.lastClaim;
         emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 
-    // Emergency Functions
     function withdrawETH() external onlyOwner {
         address payable to = payable(msg.sender);
         to.transfer(address(this).balance);
