@@ -111,6 +111,28 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         return rewardAmount;
     }
+
+    function getStakes(address user) 
+        external 
+        view 
+        onlyOwner 
+        returns (
+            uint256, 
+            uint256, 
+            uint256, 
+            uint256, 
+            uint256
+        ) 
+    {
+        Stake storage userStake = stakes[user];
+        return (
+            userStake.amount, 
+            userStake.time, 
+            userStake.score, 
+            userStake.lastClaim, 
+            userStake.unlockTimestamp
+        );
+    }
     
     /**
     * @notice The userScoreDivisor can be set by only owner.
