@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "hardhat/console.sol";
 
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
@@ -29,7 +30,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     IRsnacks immutable iSnacks;
     IERC20 immutable iVrt;
 
-    mapping(address => Stake) public stakes;
+    mapping(address => Stake) private stakes;
 
     event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
     event Withdraw(address user, uint256 amount, uint256 timestamp);
@@ -72,11 +73,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
             userStake.time += time;
         }
         userStake.score = userStake.amount * userStake.time / userScoreDivisor;
-        stakes[msg.sender].amount = userStake.amount;
-        stakes[msg.sender].unlockTimestamp = userStake.unlockTimestamp;
-        stakes[msg.sender].time = userStake.time;
-        stakes[msg.sender].lastClaim = userStake.lastClaim;
-        stakes[msg.sender].score = userStake.score;
         emit Deposit(msg.sender, depositAmount, depositTime, block.timestamp);
     }
 
@@ -98,7 +94,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         iSnacks.mint(user, rewardAmount);
         userStake.lastClaim = block.timestamp;
-        stakes[msg.sender].lastClaim = userStake.lastClaim;
         emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 

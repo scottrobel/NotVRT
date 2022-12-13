@@ -72,6 +72,7 @@ describe("StakeVRT contract test", function () {
 
     await time.increase(86400 * 30 * 12);
     rewardAmount = await StakeVRTContract.viewRewards(user.address);
+    console.log(rewardAmount);
     console.log((ethers.utils.formatEther(rewardAmount)));
 
     await StakeVRTContract.connect(user).withdraw();
