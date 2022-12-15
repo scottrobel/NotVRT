@@ -24,12 +24,14 @@ describe("StakeVRT contract test", function () {
       VRTContractAddress,
       RsnackContractAddress
     );
+    const MINTER_ROLE = await RsnackContract.MINTER_ROLE();
+    await RsnackContract.connect(owner).grantRole(MINTER_ROLE, StakeVRTContract.address);
 
     // Returns VRT and StakeVRT contracts.
     return { VRTContract, StakeVRTContract, RsnackContract };
   }
 
-  it("Staking function test", async function () {
+  it("Staking function test for Alice Bob", async function () {
     const [owner, user] = await ethers.getSigners();
     const { VRTContract, StakeVRTContract, RsnackContract } = await loadFixture(
       deployContracts
@@ -37,7 +39,7 @@ describe("StakeVRT contract test", function () {
 
     const StakeVRTContractAddress = StakeVRTContract.address;
 
-    console.log("Transfer 1000 VRTs to user.");
+    console.log("Transfer 10000000000 VRTs to user.");
     await VRTContract.connect(owner).transfer(user.address, 10000000000);
     // Check user's VRT balance after transfer.
     expect(await VRTContract.balanceOf(user.address)).to.equal(10000000000);
@@ -54,8 +56,38 @@ describe("StakeVRT contract test", function () {
       
     
     await VRTContract.connect(user).approve(StakeVRTContractAddress, 10000000000);
-    console.log("Stake 100 VRT tokens for 1 month.");
-    let tx = await StakeVRTContract.connect(user).deposit(10000000000, 86400 * 30 *12);
+    
+    console.log("User stakes 0 VRT for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 0)).to.be.revertedWith("1");
+    console.log("User stakes 0 vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 1000000)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    console.log("User attempts withdraw");
+    await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
+
+    await time.increase(1000);
+    console.log("User claims rewards after 1000s.");
+    await expect(StakeVRTContract.connect(user).claimRewards(user.address)).revertedWith("2");
+
+    console.log("User stakes 0 VRT for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 0)).to.be.revertedWith("1");
+    console.log("User stakes 0 vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 1000000)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    console.log("User stakes 1mm vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+
+    await time.increase(1000000);
+    console.log("User attempts withdraw after 1000000s");
+    await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
 
     // Check VRT balance of staking contract after staking.
     stakeContractVRTBalance = await VRTContract.balanceOf(
@@ -65,38 +97,75 @@ describe("StakeVRT contract test", function () {
       "StakeVRT contract's VRT balance after staking: ",
       stakeContractVRTBalance.toString()
     );
-    expect(stakeContractVRTBalance).to.be.equal(10000000000);
+    expect(stakeContractVRTBalance).to.be.equal(0);
+  });
 
-    let rewardAmount = await StakeVRTContract.viewRewards(user.address);
-    console.log(rewardAmount);
+  it("Staking function test for Charlie", async function () {
+    const [owner, user] = await ethers.getSigners();
+    const { VRTContract, StakeVRTContract, RsnackContract } = await loadFixture(
+      deployContracts
+    );
 
-    await time.increase(86400 * 30 * 12);
-    rewardAmount = await StakeVRTContract.viewRewards(user.address);
-    console.log(rewardAmount);
-    console.log((ethers.utils.formatEther(rewardAmount)));
+    const StakeVRTContractAddress = StakeVRTContract.address;
 
-    await StakeVRTContract.connect(user).withdraw();
+    console.log("Transfer 10000000000 VRTs to user.");
+    await VRTContract.connect(owner).transfer(user.address, 10000000000);
+    // Check user's VRT balance after transfer.
+    expect(await VRTContract.balanceOf(user.address)).to.equal(10000000000);
 
-    stakeContractVRTBalance = await VRTContract.balanceOf(
+    // Check VRT balance of staking contract before staking.
+    let stakeContractVRTBalance = await VRTContract.balanceOf(
       StakeVRTContractAddress
     );
     console.log(
-      "StakeVRT contract's VRT balance after withdraw: ",
+      "StakeVRT contract's VRT balance before staking: ",
       stakeContractVRTBalance.toString()
       );
+      expect(stakeContractVRTBalance).to.be.equal(0);
+      
+    
+    await VRTContract.connect(user).approve(StakeVRTContractAddress, 10000000000);
+    
+    console.log("User stakes 0 VRT for 1 year + 1s.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 86400*30*12 + 1)).to.be.revertedWith("1");
+    // console.log("User stakes 0 vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(0, 1000000)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 0s.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    // console.log("User attempts withdraw");
+    // await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
 
-    stakeContractVRTBalance = await VRTContract.balanceOf(
-      user.address
-    );
-    console.log(
-      "User's VRT balance after withdraw: ",
-      stakeContractVRTBalance.toString()
-      );
-    let userRSnackBalance = await RsnackContract.balanceOf(user.address);
-    console.log("user reward balance after withdraw:", userRSnackBalance);
+    // await time.increase(1000);
+    // console.log("User claims rewards after 1000s.");
+    // await expect(StakeVRTContract.connect(user).claimRewards(user.address)).revertedWith("2");
 
-    // Trying to claim rewards after some 15 days.
-    // await time.increase(86400 * 15);
-    // tx = await StakeVRTContract.connect(user).claimRewards(user.address);
+    // console.log("User stakes 0 VRT for 0s.");
+    // await expect(StakeVRTContract.connect(user).deposit(0, 0)).to.be.revertedWith("1");
+    // console.log("User stakes 0 vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(0, 1000000)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 0s.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    // console.log("User stakes 1mm vrt for 1mms.");
+    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+
+    // await time.increase(1000000);
+    // console.log("User attempts withdraw after 1000000s");
+    // await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
+
+    // // Check VRT balance of staking contract after staking.
+    // stakeContractVRTBalance = await VRTContract.balanceOf(
+    //   StakeVRTContractAddress
+    // );
+    // console.log(
+    //   "StakeVRT contract's VRT balance after staking: ",
+    //   stakeContractVRTBalance.toString()
+    // );
+    // expect(stakeContractVRTBalance).to.be.equal(0);
   });
 });

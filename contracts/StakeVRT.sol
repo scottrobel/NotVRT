@@ -31,8 +31,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
 
     mapping(address => Stake) private stakes;
 
-    event Deposit(address user, uint256 amount, uint256 period, uint256 startTime);
-    event Withdraw(address user, uint256 amount, uint256 timestamp);
+    event Deposit(address user, uint256 amount, uint256 period, uint256 rewardAmount, uint256 startTime);
+    event Withdraw(address user, uint256 amount, uint256 rewardAmount, uint256 timestamp);
     event ClaimRewards(address user, uint256 amount, uint256 timestamp);
     event WithdrawToken(address user, address token, uint256 timestamp);
     event SetUserScoreDivisor(uint256 userScoreDivisor, uint256 timestamp);
@@ -62,6 +62,10 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         Stake storage userStake = stakes[msg.sender];
         uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
         uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
+        // Reward calculation logic
+        uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
+        uint256 pendingReward = userStake.score * elapsedSeconds / perSecondDivisor;
+        // End Reward calculation logic
         if(userStake.lastClaim == 0) { //Initial stake logic
             require(time >= MONTH, "1"); // Minimum stake time is 1 month.
             userStake.lastClaim = block.timestamp;
@@ -69,12 +73,14 @@ contract StakeVRT is Ownable, ReentrancyGuard {
             userStake.amount = depositAmount;
             userStake.time = time;
         } else{
+            iSnacks.mint(msg.sender, pendingReward);
             userStake.unlockTimestamp += time;
             userStake.amount += depositAmount;
             userStake.time += time;
+            userStake.lastClaim = block.timestamp;
         }
         userStake.score = userStake.amount * userStake.time / userScoreDivisor;
-        emit Deposit(msg.sender, depositAmount, depositTime, block.timestamp);
+        emit Deposit(msg.sender, depositAmount, depositTime, pendingReward, block.timestamp);
     }
 
     function withdraw() external nonReentrant {
@@ -86,7 +92,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         iVrt.transfer(msg.sender, userStake.amount);
         iSnacks.mint(msg.sender, rewardAmount);
         // End Reward calculation logic
-        emit Withdraw(msg.sender, userStake.amount, block.timestamp);
+        emit Withdraw(msg.sender, userStake.amount, rewardAmount, block.timestamp);
         delete(stakes[msg.sender]);
     }
 
@@ -96,9 +102,9 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        // End Reward calculation logic
         iSnacks.mint(user, rewardAmount);
         userStake.lastClaim = block.timestamp;
-        // End Reward calculation logic
         emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 
