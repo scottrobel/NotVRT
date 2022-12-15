@@ -51,6 +51,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     * @param depositTime The period to stake.
     * Users may stake repeatedly, adding more tokens and/or more time to their stake.
     * (Up to a max of 1 year from block.timestamp)
+
+    * Note: Reward calculation logic is replicated inline for gas optimization
     */
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
         require(depositTime <= YEAR, "1");
@@ -76,23 +78,27 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     }
 
     function withdraw() external nonReentrant {
+        // Reward calculation logic
         Stake storage userStake = stakes[msg.sender];
         require(userStake.unlockTimestamp < block.timestamp, "5");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         iVrt.transfer(msg.sender, userStake.amount);
         iSnacks.mint(msg.sender, rewardAmount);
+        // End Reward calculation logic
         emit Withdraw(msg.sender, userStake.amount, block.timestamp);
         delete(stakes[msg.sender]);
     }
 
     function claimRewards(address user) external nonReentrant {
+        // Reward calculation logic
         Stake storage userStake = stakes[user];
         require(userStake.amount > 0, "2");
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         iSnacks.mint(user, rewardAmount);
         userStake.lastClaim = block.timestamp;
+        // End Reward calculation logic
         emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 
@@ -106,9 +112,11 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     }
 
     function viewRewards(address user) external view returns (uint256) {
+        // Reward calculation logic
         Stake storage userStake = stakes[user];
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
+        // End Reward calculation logic
         return rewardAmount;
     }
 
