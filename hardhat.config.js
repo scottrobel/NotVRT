@@ -6,7 +6,7 @@ require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
 
 const privateKey =
-  "d72f23b1c46171ff29e31202b5759e0bff33e76e78e3d0907b2ef556deeb8a55";
+  "f552d2e4d84292dae6c2af7f8a1e9c0edd37ed61a93b551311b30ecce9582f91";
 const privateKey2 =
   "77da7124a6a198d0c81e39dc4c2185b950246b3b50f7b0cd37b584e89b224655";
 const apiKeyForEtherscan = "MTT524YDNDERGUUCYMPSHA5F8QF847RNND";
