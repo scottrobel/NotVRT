@@ -129,7 +129,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     function getStake(address user) 
         external 
         view 
-        onlyOwner 
         returns (
             uint256, 
             uint256, 
