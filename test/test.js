@@ -67,7 +67,7 @@ describe("StakeVRT contract test", function () {
     await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
     console.log("User stakes 1mm vrt for 1mms.");
     await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
-    console.log("User attempts withdraw");
+    console.log("User attempts withdraw.");
     await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
 
     await time.increase(1000);
@@ -86,7 +86,7 @@ describe("StakeVRT contract test", function () {
     await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
 
     await time.increase(1000000);
-    console.log("User attempts withdraw after 1000000s");
+    console.log("User attempts withdraw after 1000000s.");
     await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
 
     // Check VRT balance of staking contract after staking.
@@ -127,15 +127,32 @@ describe("StakeVRT contract test", function () {
     await VRTContract.connect(user).approve(StakeVRTContractAddress, 10000000000);
     
     console.log("User stakes 0 VRT for 1 year + 1s.");
-    await expect(StakeVRTContract.connect(user).deposit(0, 86400*30*12 + 1)).to.be.revertedWith("1");
-    // console.log("User stakes 0 vrt for 1mms.");
-    // await expect(StakeVRTContract.connect(user).deposit(0, 1000000)).to.be.revertedWith("1");
-    // console.log("User stakes 1mm vrt for 0s.");
-    // await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
-    // console.log("User stakes 1mm vrt for 1mms.");
-    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
-    // console.log("User stakes 1mm vrt for 1mms.");
-    // await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    await expect(StakeVRTContract.connect(user).deposit(0, 86400*365 + 1)).to.be.revertedWith("1");
+    console.log("User stakes 0 vrt for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(0, 0)).to.be.revertedWith("1");
+    console.log("User attempts withdraw.");
+    await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
+    console.log("User stakes 1mm vrt for 0s.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 0)).to.be.revertedWith("1");
+    console.log("User attempts withdraw.");
+    await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
+    console.log("User stakes 1mm vrt for 1mms.");
+    await expect(StakeVRTContract.connect(user).deposit(1000000, 1000000)).to.be.revertedWith("1");
+    
+    await time.increase(1000000);
+    console.log("User reward amount should be 0 at this point.");
+    let userRewardAmount = await StakeVRTContract.connect(user).viewRewards(user.address);
+    expect(userRewardAmount).to.be.equal(0);
+    console.log("User claims rewards.");
+    await expect(StakeVRTContract.connect(user).claimRewards(user.address)).to.be.revertedWith("2");
+    console.log("User stakes 1mm vrt for 1 year");
+    await expect(StakeVRTContract.connect(user).deposit(100000000, 86400*365)).to.emit(StakeVRTContract, "Deposit").withArgs(user.address, 100000000, 86400*365, 0, time.latestBlock);
+    
+    await time.increase(86400*180);
+    console.log("User reward amount after 180 days");
+    userRewardAmount = await StakeVRTContract.connect(user).viewRewards(user.address);
+    console.log((ethers.utils.formatEther(userRewardAmount)));
+
     // console.log("User attempts withdraw");
     // await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
 

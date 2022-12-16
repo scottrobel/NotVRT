@@ -56,9 +56,6 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     */
     function deposit(uint256 depositAmount, uint256 depositTime) external nonReentrant {
         require(depositTime <= YEAR, "1");
-        if(depositAmount > 0){
-            iVrt.transferFrom(msg.sender, address(this), depositAmount);
-        }
         Stake storage userStake = stakes[msg.sender];
         uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
         uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
@@ -73,13 +70,16 @@ contract StakeVRT is Ownable, ReentrancyGuard {
             userStake.amount = depositAmount;
             userStake.time = time;
         } else{
-            iSnacks.mint(msg.sender, pendingReward);
             userStake.unlockTimestamp += time;
             userStake.amount += depositAmount;
             userStake.time += time;
             userStake.lastClaim = block.timestamp;
+            iSnacks.mint(msg.sender, pendingReward);
         }
         userStake.score = userStake.amount * userStake.time / userScoreDivisor;
+        if(depositAmount > 0){
+            iVrt.transferFrom(msg.sender, address(this), depositAmount);
+        }
         emit Deposit(msg.sender, depositAmount, depositTime, pendingReward, block.timestamp);
     }
 
@@ -103,8 +103,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 rewardAmount = userStake.score * elapsedSeconds / perSecondDivisor;
         // End Reward calculation logic
-        iSnacks.mint(user, rewardAmount);
         userStake.lastClaim = block.timestamp;
+        iSnacks.mint(user, rewardAmount);
         emit ClaimRewards(user, rewardAmount, block.timestamp);
     }
 
@@ -126,7 +126,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         return rewardAmount;
     }
 
-    function getStakes(address user) 
+    function getStake(address user) 
         external 
         view 
         onlyOwner 
