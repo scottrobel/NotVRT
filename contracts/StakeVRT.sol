@@ -80,7 +80,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         if(depositAmount > 0){
             iVrt.transferFrom(msg.sender, address(this), depositAmount);
         }
-        emit Deposit(msg.sender, depositAmount, depositTime, pendingReward, block.timestamp);
+        emit Deposit(msg.sender, userStake.amount, userStake.time, pendingReward, block.timestamp);
     }
 
     function withdraw() external nonReentrant {

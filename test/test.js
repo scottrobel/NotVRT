@@ -145,13 +145,39 @@ describe("StakeVRT contract test", function () {
     expect(userRewardAmount).to.be.equal(0);
     console.log("User claims rewards.");
     await expect(StakeVRTContract.connect(user).claimRewards(user.address)).to.be.revertedWith("2");
-    console.log("User stakes 1mm vrt for 1 year");
+    console.log("User stakes 100mm vrt for 1 year");
     await expect(StakeVRTContract.connect(user).deposit(100000000, 86400*365)).to.emit(StakeVRTContract, "Deposit").withArgs(user.address, 100000000, 86400*365, 0, time.latestBlock);
     
     await time.increase(86400*180);
-    console.log("User reward amount after 180 days");
+    console.log("User reward amount should be 466 after 180 days");
     userRewardAmount = await StakeVRTContract.connect(user).viewRewards(user.address);
-    console.log((ethers.utils.formatEther(userRewardAmount)));
+    expect(userRewardAmount.toString()).to.be.equal("466");
+    console.log("User stakes 100mm vrt for 1 year again");
+    await expect(StakeVRTContract.connect(user).deposit(100000000, 86400*365)).to.emit(StakeVRTContract, "Deposit").withArgs(
+      user.address, 
+      200000000, 
+      86400*(180+365) + 1, 
+      "466", 
+      time.latestBlock
+    );
+    let userRSnackBalance = await RsnackContract.balanceOf(user.address);
+    expect(userRSnackBalance).to.be.equal(userRewardAmount);
+
+    console.log("User stakes 100mm vrt for 1month-1s.")
+    await time.increase(86400*180);
+    userRewardAmount = await StakeVRTContract.connect(user).viewRewards(user.address);
+    console.log(userRewardAmount.toString());
+    await expect(StakeVRTContract.connect(user).deposit(100000000, 86400*30 - 1)).to.emit(StakeVRTContract, "Deposit").withArgs(
+      user.address,
+      300000000,
+      86400*(180+365+30),
+      userRewardAmount.toString(),
+      time.latestBlock
+    );
+    userRSnackBalance = await RsnackContract.balanceOf(user.address);
+    expect(userRSnackBalance).to.be.equal((466 + userRewardAmount.toNumber()));
+    // let receipt = await tx.wait();
+    // console.log(receipt.events?.filter((x) => {return x.event == "Deposit"}));
 
     // console.log("User attempts withdraw");
     // await expect(StakeVRTContract.connect(user).withdraw()).to.emit(StakeVRTContract, "Withdraw").withArgs(user.address, 0, 0, time.latestBlock);
