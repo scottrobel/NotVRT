@@ -12,7 +12,7 @@ interface IRsnacks {
 contract StakeVRT is Ownable, ReentrancyGuard {
     struct Stake {
         uint256 amount;
-        uint256 time;
+        uint256 totalStakeTime;
         uint256 score;
         uint256 lastClaim;
         uint256 unlockTimestamp;
@@ -58,29 +58,29 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         require(depositTime <= YEAR, "1");
         Stake storage userStake = stakes[msg.sender];
         uint256 maxExtension = block.timestamp + YEAR - userStake.unlockTimestamp;
-        uint256 time = depositTime > maxExtension ? maxExtension : depositTime;
+        uint256 stakeTimeIncrease = depositTime > maxExtension ? maxExtension : depositTime;
         // Reward calculation logic
         uint256 elapsedSeconds = block.timestamp - userStake.lastClaim;
         uint256 pendingReward = userStake.score * elapsedSeconds / perSecondDivisor;
         // End Reward calculation logic
         if(userStake.lastClaim == 0) { //Initial stake logic
-            require(time >= MONTH, "1"); // Minimum stake time is 1 month.
+            require(stakeTimeIncrease >= MONTH, "1"); // Minimum stake time is 1 month.
             userStake.lastClaim = block.timestamp;
-            userStake.unlockTimestamp = block.timestamp + time; // Initializes stake to now, increases it 
+            userStake.unlockTimestamp = block.timestamp + stakeTimeIncrease; // Initializes stake to now, increases it 
             userStake.amount = depositAmount;
-            userStake.time = time;
+            userStake.totalStakeTime = stakeTimeIncrease;
         } else{
-            userStake.unlockTimestamp += time;
+            userStake.unlockTimestamp += stakeTimeIncrease;
             userStake.amount += depositAmount;
-            userStake.time += time;
+            userStake.totalStakeTime += stakeTimeIncrease;
             userStake.lastClaim = block.timestamp;
             iSnacks.mint(msg.sender, pendingReward);
         }
-        userStake.score = userStake.amount * userStake.time / userScoreDivisor;
+        userStake.score = userStake.amount * userStake.totalStakeTime / userScoreDivisor;
         if(depositAmount > 0){
             iVrt.transferFrom(msg.sender, address(this), depositAmount);
         }
-        emit Deposit(msg.sender, userStake.amount, userStake.time, pendingReward, block.timestamp);
+        emit Deposit(msg.sender, userStake.amount, userStake.totalStakeTime, pendingReward, block.timestamp);
     }
 
     function withdraw() external nonReentrant {
@@ -140,7 +140,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
         Stake storage userStake = stakes[user];
         return (
             userStake.amount, 
-            userStake.time, 
+            userStake.totalStakeTime, 
             userStake.score, 
             userStake.lastClaim, 
             userStake.unlockTimestamp
