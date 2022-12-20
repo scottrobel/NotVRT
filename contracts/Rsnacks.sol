@@ -15,4 +15,7 @@ contract Rsnacks is ERC20, AccessControl {
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
+    function burnFrom(address account, uint256 amount) public {
+        _burn(account, amount);
+    }
 }

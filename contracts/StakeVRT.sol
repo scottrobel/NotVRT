@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 interface IRsnacks {
     function mint(address to, uint256 amount) external;
+    function burnFrom(address account, uint256 amount) external;
 }
 
 contract StakeVRT is Ownable, ReentrancyGuard {
@@ -37,6 +38,7 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     event WithdrawToken(address user, address token, uint256 timestamp);
     event SetUserScoreDivisor(uint256 userScoreDivisor, uint256 timestamp);
     event SetPerSecondDivisor(uint256 perSecondDivisor, uint256 timestamp);
+    event Redeem(address user, uint256 amount, uint256 rewardId, uint256 timestamp);
 
     constructor(address _vrt, address _rSnacks) {
         snacks = _rSnacks;
@@ -115,6 +117,11 @@ contract StakeVRT is Ownable, ReentrancyGuard {
 
     function withdrawToken(address token) external onlyOwner {
         IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+    }
+
+    function redeemReward(uint256 rewardId, uint256 amount) external {
+        iSnacks.burnFrom(msg.sender, amount);
+        emit Redeem(msg.sender, amount, rewardId, block.timestamp);
     }
 
     function viewRewards(address user) external view returns (uint256) {
