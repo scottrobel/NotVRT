@@ -21,3 +21,11 @@ amount to deposit * timestamp / scoreFactor
 ## Withdraw
 - withdraw should be standard, if the required time has passed, allow the user to withdraw and zero out their stake struct.
 
+## Contract Errors Explanation
+1 => Staking time should be between a month to a year.
+2 => User is not stakeholder.
+3 => User score divisor can't be 0.
+4 => Per second divisor can't be 0.
+5 => You can't withdraw before unlock time.
+6 => Deposit amount should be bigger than 0.
+7 => VRT transfer has been failed.
