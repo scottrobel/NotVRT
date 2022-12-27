@@ -22,8 +22,8 @@ contract StakeVRT is Ownable, ReentrancyGuard {
     uint256 public constant MONTH = 30 days;
     uint256 public constant YEAR = 365 days;
 
-    uint256 userScoreDivisor = 1e15;
-    uint256 perSecondDivisor = 1e5;
+    uint256 public userScoreDivisor = 1e15;
+    uint256 public perSecondDivisor = 1e5;
 
     address public immutable snacks;
     address public immutable vrt;
