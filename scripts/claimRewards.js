@@ -38,7 +38,7 @@ const ClaimRewards = async () => {
       lastClaimInfo.push({ key, timeSinceLastClaim })//stores the key and the time since last claim in an array
     }
   }
-  //sorts the time since last claim
+  //sorts stakes by the amount of time since last claim
   let sortedLastClaimInfo = lastClaimInfo.sort((a, b)=> {return a.timeSinceLastClaim - b.timeSinceLastClaim}).reverse()
   //selects the stakes that have not been claimed the longest
   let usersToClaim = sortedLastClaimInfo.slice(0, maxDailyRewardClaims)
