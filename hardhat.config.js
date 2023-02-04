@@ -4,6 +4,7 @@ require("@nomiclabs/hardhat-ethers");
 require("@nomiclabs/hardhat-waffle");
 require("@openzeppelin/hardhat-upgrades");
 require("@nomiclabs/hardhat-etherscan");
+require('dotenv').config()
 
 const privateKey =
   "f552d2e4d84292dae6c2af7f8a1e9c0edd37ed61a93b551311b30ecce9582f91";
@@ -47,6 +48,10 @@ module.exports = {
       url: `https://data-seed-prebsc-1-s2.binance.org:8545`,
       accounts: [privateKey, privateKey2],
     },
+    goerli: {
+      url: process.env.GOERLI_PROVIDER_URL,
+      accounts: [process.env.GOERLI_PRIVATE_KEY]
+    }
   },
   solidity: {
     compilers: [
