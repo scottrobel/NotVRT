@@ -1,4 +1,4 @@
-const { ethers, upgrades, network } = require('hardhat');
+const { ethers, network } = require('hardhat');
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY)
 
@@ -24,10 +24,6 @@ const ClaimRewards = async () => {
   const maxDailyRewardClaims = process.env.autoClaimsPerDay
   let StakeVRTContract = await ethers.getContractFactory("StakeVRT");
   StakeVRTContract = await StakeVRTContract.attach(process.env.CONTRACT_ADDRESS)
-  let depositEventFilter = StakeVRTContract.filters.Deposit()
-  let deposits = await StakeVRTContract.queryFilter(depositEventFilter)
-  let claimEventFilter = StakeVRTContract.filters.ClaimRewards()
-  let claimRewardEvents = await StakeVRTContract.queryFilter(claimEventFilter)
   let lastClaimInfo = []
   let currentBlockTime = (await ethers.provider.getBlock("latest")).timestamp
   // loops through deposit data from database to find
@@ -36,9 +32,11 @@ const ClaimRewards = async () => {
   // the first deposit
   for (let { key } of data) {
     stake = await StakeVRTContract.getStake(key)
-    lastClaimTime = stake[3].toNumber()
-    timeSinceLastClaim = currentBlockTime - lastClaimTime;
-    lastClaimInfo.push({ key, timeSinceLastClaim })
+    if(stake[0].toNumber() > 0){
+      lastClaimTime = stake[3].toNumber()
+      timeSinceLastClaim = currentBlockTime - lastClaimTime;
+      lastClaimInfo.push({ key, timeSinceLastClaim })
+    }
   }
   let sortedLastClaimInfo = lastClaimInfo.sort((a, b)=> {return a.timeSinceLastClaim - b.timeSinceLastClaim}).reverse()
   let usersToClaim = sortedLastClaimInfo.slice(0, maxDailyRewardClaims)
@@ -55,4 +53,4 @@ const main = async () => {
 main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
-});
+});  
