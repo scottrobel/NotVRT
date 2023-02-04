@@ -4,7 +4,7 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 
 async function recordStakeWallets() {
   let StakeVRTContract = await ethers.getContractFactory("StakeVRT");
-  StakeVRTContract = await StakeVRTContract.attach("0xa9e8fe9D32832fD04923137dE13a06D38a6A97A7")
+  StakeVRTContract = await StakeVRTContract.attach(process.env.CONTRACT_ADDRESS)
   let depositEventFilter = StakeVRTContract.filters.ClaimRewards()
   let { data, error } = await supabase.from('users').select('key')
   let deposits = await StakeVRTContract.queryFilter(depositEventFilter)
@@ -18,13 +18,12 @@ async function recordStakeWallets() {
         .insert({ key: stakeUserAddress })
     }
   }
-  console.log(usersWhoStaked)
 }
 const ClaimRewards = async () => {
   const { data, error } = await supabase.from('users').select('key')
-  const maxDailyRewardClaims = 2
+  const maxDailyRewardClaims = process.env.autoClaimsPerDay
   let StakeVRTContract = await ethers.getContractFactory("StakeVRT");
-  StakeVRTContract = await StakeVRTContract.attach("0xa9e8fe9D32832fD04923137dE13a06D38a6A97A7")
+  StakeVRTContract = await StakeVRTContract.attach(process.env.CONTRACT_ADDRESS)
   let depositEventFilter = StakeVRTContract.filters.Deposit()
   let deposits = await StakeVRTContract.queryFilter(depositEventFilter)
   let claimEventFilter = StakeVRTContract.filters.ClaimRewards()
@@ -41,10 +40,9 @@ const ClaimRewards = async () => {
     timeSinceLastClaim = currentBlockTime - lastClaimTime;
     lastClaimInfo.push({ key, timeSinceLastClaim })
   }
-  let sortedLastClaimInfo = lastClaimInfo.sort((a, b)=> {return a.blocksSinceLastClaim - b.blocksSinceLastClaim}).reverse()
+  let sortedLastClaimInfo = lastClaimInfo.sort((a, b)=> {return a.timeSinceLastClaim - b.timeSinceLastClaim}).reverse()
   let usersToClaim = sortedLastClaimInfo.slice(0, maxDailyRewardClaims)
   const [user] = await ethers.getSigners();
-  console.log(usersToClaim)
   for(const userToClaimIndex in usersToClaim){
     let userToClaim = usersToClaim[userToClaimIndex].key
     result = await StakeVRTContract.connect(user).claimRewards(userToClaim)
@@ -54,7 +52,7 @@ const main = async () => {
   await recordStakeWallets()
   await ClaimRewards()
 }
-main.catch((error) => {
+main().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
